@@ -43,7 +43,7 @@ const Footer = () => {
             </div>
           </div>
           <Link to="#" className="hover:opacity-60 transition-opacity">Messages</Link>
-          <Link to="#" className="hover:opacity-60 transition-opacity">Contact Agent</Link>
+          <Link to="/contact-agent" className="hover:opacity-60 transition-opacity">Contact Agent</Link>
         </nav>
 
         {/* Center: Social Media Icons */}

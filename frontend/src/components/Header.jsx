@@ -54,7 +54,7 @@ const Header = () => {
               </div>
             </div>
           </div>
-          <Link to="#" className="text-white font-medium hover:text-yellow-400 transition-colors">Contact Agent</Link>
+          <Link to="/contact-agent" className="text-white font-medium hover:text-yellow-400 transition-colors">Contact Agent</Link>
           <Link to="#" className="text-white font-medium hover:text-yellow-400 transition-colors">Messages</Link>
         </nav>
 
@@ -120,7 +120,7 @@ const Header = () => {
               </div>
             )}
           </div>
-          <Link to="#" onClick={() => setMobileMenuOpen(false)} className="text-white font-medium hover:text-yellow-400 transition-colors px-4 py-2">Contact Agent</Link>
+          <Link to="/contact-agent" onClick={() => setMobileMenuOpen(false)} className="text-white font-medium hover:text-yellow-400 transition-colors px-4 py-2">Contact Agent</Link>
           <Link to="#" onClick={() => setMobileMenuOpen(false)} className="text-white font-medium hover:text-yellow-400 transition-colors px-4 py-2">Messages</Link>
         </nav>
       )}

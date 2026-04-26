@@ -5,6 +5,8 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import ShopCategory from './pages/ShopCategory';
 import FertilizerSubsidy from './pages/FertilizerSubsidy';
+import DisasterReliefFund from './pages/DisasterReliefFund';
+import ContactAgent from './pages/ContactAgent';
 
 function App() {
   return (
@@ -16,6 +18,8 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/shop/:category" element={<ShopCategory />} />
             <Route path="/subsidies/fertilizer" element={<FertilizerSubsidy />} />
+            <Route path="/subsidies/disaster-relief" element={<DisasterReliefFund />} />
+            <Route path="/contact-agent" element={<ContactAgent />} />
           </Routes>
         </div>
         <Footer />
