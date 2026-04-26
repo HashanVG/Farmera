@@ -7,6 +7,10 @@ import ShopCategory from './pages/ShopCategory';
 import FertilizerSubsidy from './pages/FertilizerSubsidy';
 import DisasterReliefFund from './pages/DisasterReliefFund';
 import ContactAgent from './pages/ContactAgent';
+import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
+import Messages from './pages/Messages';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -20,6 +24,10 @@ function App() {
             <Route path="/subsidies/fertilizer" element={<FertilizerSubsidy />} />
             <Route path="/subsidies/disaster-relief" element={<DisasterReliefFund />} />
             <Route path="/contact-agent" element={<ContactAgent />} />
+            <Route path="/sign-in" element={<SignIn />} />
+            <Route path="/sign-up" element={<SignUp />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
           </Routes>
         </div>
         <Footer />

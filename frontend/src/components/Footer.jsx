@@ -42,7 +42,7 @@ const Footer = () => {
               </div>
             </div>
           </div>
-          <Link to="#" className="hover:opacity-60 transition-opacity">Messages</Link>
+          <Link to="/messages" className="hover:opacity-60 transition-opacity">Messages</Link>
           <Link to="/contact-agent" className="hover:opacity-60 transition-opacity">Contact Agent</Link>
         </nav>
 

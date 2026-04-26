@@ -55,14 +55,14 @@ const Header = () => {
             </div>
           </div>
           <Link to="/contact-agent" className="text-white font-medium hover:text-yellow-400 transition-colors">Contact Agent</Link>
-          <Link to="#" className="text-white font-medium hover:text-yellow-400 transition-colors">Messages</Link>
+          <Link to="/messages" className="text-white font-medium hover:text-yellow-400 transition-colors">Messages</Link>
         </nav>
 
         {/* Icons & Mobile Toggle */}
         <div className="flex items-center gap-4 md:gap-6">
-          <button className="hover:opacity-80 transition-opacity">
+          <Link to="/sign-in" className="hover:opacity-80 transition-opacity">
               <img src={userIcon} alt="User" className="h-8 w-8 md:h-10 md:w-10 object-contain" />
-          </button>
+          </Link>
           <button className="hover:opacity-80 transition-opacity">
              <img src={cartIcon} alt="Cart" className="h-8 w-8 md:h-10 md:w-10 object-contain" />
           </button>
@@ -121,7 +121,7 @@ const Header = () => {
             )}
           </div>
           <Link to="/contact-agent" onClick={() => setMobileMenuOpen(false)} className="text-white font-medium hover:text-yellow-400 transition-colors px-4 py-2">Contact Agent</Link>
-          <Link to="#" onClick={() => setMobileMenuOpen(false)} className="text-white font-medium hover:text-yellow-400 transition-colors px-4 py-2">Messages</Link>
+          <Link to="/messages" onClick={() => setMobileMenuOpen(false)} className="text-white font-medium hover:text-yellow-400 transition-colors px-4 py-2">Messages</Link>
         </nav>
       )}
     </header>
