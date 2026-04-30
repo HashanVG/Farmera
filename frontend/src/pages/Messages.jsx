@@ -1,34 +1,24 @@
-import React, { useState } from 'react';
-
-const mockMessages = [
-  {
-    id: 1,
-    sender: 'Ministry of Agriculture',
-    date: 'Oct 26, 2026 - 09:30 AM',
-    title: 'Fertilizer Subsidy Circular No. 45',
-    image: 'https://images.unsplash.com/photo-1603796846097-bee99e4a601f?q=80&w=1974&auto=format&fit=crop',
-    isUnread: true
-  },
-  {
-    id: 2,
-    sender: 'Agricultural Admin',
-    date: 'Oct 24, 2026 - 02:15 PM',
-    title: 'Notice regarding Weather Conditions',
-    image: 'https://images.unsplash.com/photo-1555626906-fcf10d6851b4?q=80&w=2070&auto=format&fit=crop',
-    isUnread: false
-  },
-  {
-    id: 3,
-    sender: 'Regional Secretariat',
-    date: 'Oct 20, 2026 - 11:00 AM',
-    title: 'Disaster Relief Form Guidelines',
-    image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?q=80&w=2070&auto=format&fit=crop',
-    isUnread: false
-  }
-];
+import React, { useState, useEffect } from 'react';
 
 const Messages = () => {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [notices, setNotices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNotices = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/notices');
+        const data = await res.json();
+        setNotices(data);
+      } catch (err) {
+        console.error('Error fetching notices:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotices();
+  }, []);
 
   return (
     <main className="min-h-screen pt-32 pb-16 px-6 flex flex-col items-center relative bg-cover bg-center bg-fixed" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?q=80&w=2070&auto=format&fit=crop')" }}>
@@ -47,16 +37,18 @@ const Messages = () => {
           </p>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
+          </div>
+        )}
+
         {/* Messages Container */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {mockMessages.map((msg) => (
+          {notices.map((msg) => (
             <div key={msg.id} className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl overflow-hidden relative group hover:bg-white/15 transition-all duration-300 flex flex-col">
               
-              {/* Unread Indicator */}
-              {msg.isUnread && (
-                <div className="absolute top-4 right-4 w-3 h-3 bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.8)] z-20"></div>
-              )}
-
               {/* Message Header */}
               <div className="p-5 border-b border-white/10 bg-black/20">
                 <div className="flex items-center gap-3 mb-2">
@@ -65,7 +57,9 @@ const Messages = () => {
                   </div>
                   <div className="truncate">
                     <h3 className="text-white font-bold text-base truncate">{msg.sender}</h3>
-                    <p className="text-white/50 text-xs">{msg.date}</p>
+                    <p className="text-white/50 text-xs">
+                      {msg.createdAt ? new Date(msg.createdAt._seconds * 1000).toLocaleDateString() : 'Official Notice'}
+                    </p>
                   </div>
                 </div>
                 <h2 className="text-lg font-bold text-yellow-400 truncate" title={msg.title}>{msg.title}</h2>
@@ -87,9 +81,20 @@ const Messages = () => {
                 </div>
               </div>
 
+              {/* Description */}
+              <div className="px-5 pb-5 pt-1">
+                <p className="text-white/70 text-sm italic line-clamp-2">"{msg.description}"</p>
+              </div>
+
             </div>
           ))}
         </div>
+
+        {!loading && notices.length === 0 && (
+          <div className="text-center py-20 bg-white/5 backdrop-blur-md rounded-3xl border border-dashed border-white/20">
+            <p className="text-white/40 font-bold">No official notices have been posted yet.</p>
+          </div>
+        )}
       </div>
 
       {/* Image Modal */}

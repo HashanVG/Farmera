@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { auth } from '../firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 const SignUp = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -20,18 +25,51 @@ const SignUp = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
     if (!formData.acceptCookies) {
-      alert("You must accept the cookies and terms to sign up.");
+      setError("You must accept the cookies and terms to sign up.");
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      setError("Passwords do not match!");
       return;
     }
-    alert("Sign Up successful! (Mock)");
-    // Backend integration will go here
+
+    setLoading(true);
+    try {
+      // 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const user = userCredential.user;
+
+      // 2. Call Backend API to save extra details to Firestore
+      const response = await fetch('http://localhost:5000/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uid: user.uid,
+          username: formData.username,
+          email: formData.email,
+          mobileNumber: formData.mobileNumber,
+          address: formData.address,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save user data to database');
+      }
+
+      alert("Account created successfully!");
+      navigate('/sign-in');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -48,11 +86,17 @@ const SignUp = () => {
           <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-400/20 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
 
-          <div className="relative z-10">
+            <div className="relative z-10">
             <div className="text-center mb-10">
               <h1 className="text-4xl font-black text-white mb-2 tracking-tight drop-shadow-md">Join FARMERA</h1>
               <p className="text-white/80 text-lg">Create your account to start managing your farm.</p>
             </div>
+
+            {error && (
+              <div className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-xl mb-6 text-center text-sm font-medium backdrop-blur-md animate-pulse">
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               
@@ -68,6 +112,7 @@ const SignUp = () => {
                     onChange={handleChange}
                     placeholder="Enter username"
                     className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+                    disabled={loading}
                   />
                 </div>
 
@@ -82,6 +127,7 @@ const SignUp = () => {
                     onChange={handleChange}
                     placeholder="you@gmail.com"
                     className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -98,6 +144,7 @@ const SignUp = () => {
                     onChange={handleChange}
                     placeholder="07xxxxxxxx"
                     className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+                    disabled={loading}
                   />
                 </div>
 
@@ -112,6 +159,7 @@ const SignUp = () => {
                     onChange={handleChange}
                     placeholder="Enter your address"
                     className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -128,6 +176,7 @@ const SignUp = () => {
                     onChange={handleChange}
                     placeholder="Create a password"
                     className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+                    disabled={loading}
                   />
                 </div>
 
@@ -142,6 +191,7 @@ const SignUp = () => {
                     onChange={handleChange}
                     placeholder="Confirm your password"
                     className="w-full px-5 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-400 transition-all"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -157,6 +207,7 @@ const SignUp = () => {
                     onChange={handleChange}
                     className="w-5 h-5 border border-white/30 rounded bg-white/10 focus:ring-3 focus:ring-green-300 accent-green-500 cursor-pointer"
                     required
+                    disabled={loading}
                   />
                 </div>
                 <label htmlFor="acceptCookies" className="ml-3 text-sm font-medium text-white/90 cursor-pointer select-none">
@@ -167,9 +218,18 @@ const SignUp = () => {
               {/* Submit */}
               <button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold text-lg py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 mt-6"
+                disabled={loading}
+                className={`w-full bg-green-600 hover:bg-green-500 text-white font-bold text-lg py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 mt-6 flex items-center justify-center ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                Create Account
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating Account...
+                  </>
+                ) : 'Create Account'}
               </button>
 
               {/* Sign In Link */}
