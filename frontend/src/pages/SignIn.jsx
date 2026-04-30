@@ -19,7 +19,7 @@ const SignIn = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     // Admin override for development
     if (formData.email === 'admin@gmail.com' && formData.password === 'admin') {
       alert("Admin Sign In successful! Redirecting to Dashboard...");
@@ -38,6 +38,8 @@ const SignIn = () => {
       setLoading(false);
     }
   };
+
+
 
   return (
     <main className="min-h-screen pt-32 pb-16 px-6 flex flex-col items-center justify-center relative bg-cover bg-center bg-fixed" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2064&auto=format&fit=crop')" }}>

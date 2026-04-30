@@ -39,26 +39,50 @@ const DisasterReliefFund = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
     } else {
       setErrors({});
-      // Handle form submission logic here
-      alert('Disaster relief application submitted successfully!');
-      // Reset form
-      setFormData({
-        fullName: '',
-        nationalId: '',
-        mobileNumber: '',
-        accountNumber: '',
-        document: null
-      });
-      document.getElementById('document').value = '';
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append('type', 'Disaster Relief');
+      formDataToSend.append('fullName', formData.fullName);
+      formDataToSend.append('nic', formData.nationalId);
+      formDataToSend.append('mobile', formData.mobileNumber);
+      formDataToSend.append('bankAccount', formData.accountNumber);
+      formDataToSend.append('document', formData.document);
+
+      try {
+        const response = await fetch('http://localhost:5000/api/subsidies', {
+          method: 'POST',
+          body: formDataToSend
+        });
+
+        if (response.ok) {
+          alert('Disaster relief application submitted successfully!');
+          setFormData({
+            fullName: '',
+            nationalId: '',
+            mobileNumber: '',
+            accountNumber: '',
+            document: null
+          });
+          if (document.getElementById('document')) {
+            document.getElementById('document').value = '';
+          }
+        } else {
+          alert('Submission failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('An error occurred. Please check your connection.');
+      }
     }
   };
+
 
   return (
     <main className="min-h-screen pt-32 pb-16 px-6 flex flex-col items-center relative bg-cover bg-center bg-fixed" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1605000797499-95a51c5269ae?q=80&w=2071&auto=format&fit=crop')" }}>

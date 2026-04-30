@@ -11,6 +11,9 @@ const Messages = () => {
         const res = await fetch('http://localhost:5000/api/notices');
         const data = await res.json();
         setNotices(data);
+        
+        // Mark as seen by updating the timestamp to now
+        localStorage.setItem('lastNoticeViewTime', Date.now());
       } catch (err) {
         console.error('Error fetching notices:', err);
       } finally {
@@ -19,6 +22,7 @@ const Messages = () => {
     };
     fetchNotices();
   }, []);
+
 
   return (
     <main className="min-h-screen pt-32 pb-16 px-6 flex flex-col items-center relative bg-cover bg-center bg-fixed" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?q=80&w=2070&auto=format&fit=crop')" }}>

@@ -6,15 +6,28 @@ const AdminDashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [items, setItems] = useState([]);
   const [notices, setNotices] = useState([]);
+  const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // Shop States
   const [newItem, setNewItem] = useState({ name: '', category: 'Seeds', price: '', description: '', stock: '' });
   const [image, setImage] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editItemId, setEditItemId] = useState(null);
+
+  // Notice States
   const [newNotice, setNewNotice] = useState({ title: '', sender: '', description: '' });
   const [noticeImage, setNoticeImage] = useState(null);
+
+  // Agent States
+  const [newAgent, setNewAgent] = useState({ name: '', role: 'Crops Officer', phone: '', email: '' });
+  const [agentEditMode, setAgentEditMode] = useState(false);
+  const [agentEditId, setAgentEditId] = useState(null);
 
   useEffect(() => {
     fetchItems();
     fetchNotices();
+    fetchAgents();
   }, []);
 
   const fetchItems = async () => {
@@ -33,6 +46,14 @@ const AdminDashboard = () => {
     } catch (err) { console.error(err); }
   };
 
+  const fetchAgents = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/agents');
+      const data = await res.json();
+      setAgents(data);
+    } catch (err) { console.error(err); }
+  };
+
   const handleAddItem = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -45,18 +66,40 @@ const AdminDashboard = () => {
     if (image) formData.append('image', image);
 
     try {
-      const res = await fetch('http://localhost:5000/api/shop', {
-        method: 'POST',
+      const url = editMode 
+        ? `http://localhost:5000/api/shop/${editItemId}`
+        : 'http://localhost:5000/api/shop';
+      
+      const method = editMode ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method: method,
         body: formData,
       });
+
       if (res.ok) {
-        alert('Item added successfully!');
+        alert(editMode ? 'Item updated successfully!' : 'Item added successfully!');
         setNewItem({ name: '', category: 'Seeds', price: '', description: '', stock: '' });
         setImage(null);
+        setEditMode(false);
+        setEditItemId(null);
         fetchItems();
       }
     } catch (err) { console.error(err); }
     setLoading(false);
+  };
+
+  const handleEditClick = (item) => {
+    setEditMode(true);
+    setEditItemId(item.id);
+    setNewItem({
+      name: item.name,
+      category: item.category,
+      price: item.price,
+      description: item.description,
+      stock: item.stock
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleAddNotice = async (e) => {
@@ -83,8 +126,47 @@ const AdminDashboard = () => {
     setLoading(false);
   };
 
+  const handleAddAgent = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const url = agentEditMode 
+        ? `http://localhost:5000/api/agents/${agentEditId}`
+        : 'http://localhost:5000/api/agents';
+      
+      const method = agentEditMode ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAgent),
+      });
+
+      if (res.ok) {
+        alert(agentEditMode ? 'Agent updated!' : 'Agent added!');
+        setNewAgent({ name: '', role: 'Crops Officer', phone: '', email: '' });
+        setAgentEditMode(false);
+        setAgentEditId(null);
+        fetchAgents();
+      }
+    } catch (err) { console.error(err); }
+    setLoading(false);
+  };
+
+  const handleAgentEdit = (agent) => {
+    setAgentEditMode(true);
+    setAgentEditId(agent.id);
+    setNewAgent({
+      name: agent.name,
+      role: agent.role,
+      phone: agent.phone,
+      email: agent.email
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleDeleteItem = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
+    if (!window.confirm('Delete this item?')) return;
     try {
       await fetch(`http://localhost:5000/api/shop/${id}`, { method: 'DELETE' });
       fetchItems();
@@ -92,12 +174,21 @@ const AdminDashboard = () => {
   };
 
   const handleDeleteNotice = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this notice?')) return;
+    if (!window.confirm('Delete this notice?')) return;
     try {
       await fetch(`http://localhost:5000/api/notices/${id}`, { method: 'DELETE' });
       fetchNotices();
     } catch (err) { console.error(err); }
   };
+
+  const handleDeleteAgent = async (id) => {
+    if (!window.confirm('Delete this agent?')) return;
+    try {
+      await fetch(`http://localhost:5000/api/agents/${id}`, { method: 'DELETE' });
+      fetchAgents();
+    } catch (err) { console.error(err); }
+  };
+
 
   const filteredItems = selectedCategory === 'All' 
     ? items 
@@ -130,12 +221,21 @@ const AdminDashboard = () => {
             <span className="font-bold">Messages</span>
           </button>
           
+          <button 
+            onClick={() => setActiveTab('agents')}
+            className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 ${activeTab === 'agents' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'hover:bg-white/5 text-white/60'}`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            <span className="font-bold">Agents</span>
+          </button>
+          
           <div className="mt-auto">
             <Link to="/" className="flex items-center gap-4 px-6 py-4 rounded-2xl text-white/40 hover:text-white transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
               <span className="font-bold text-sm">Exit to Site</span>
             </Link>
           </div>
+
         </aside>
 
         {/* Content Area */}
@@ -243,12 +343,28 @@ const AdminDashboard = () => {
                         />
                       </div>
 
-                      <button 
-                        type="submit" disabled={loading}
-                        className="w-full bg-green-500 hover:bg-green-400 text-green-950 font-black py-4 rounded-xl transition-all shadow-lg mt-4"
-                      >
-                        {loading ? 'Adding...' : 'Add to Shop'}
-                      </button>
+                      <div className="flex gap-2 mt-4">
+                        <button 
+                          type="submit" disabled={loading}
+                          className={`flex-1 ${editMode ? 'bg-yellow-500 hover:bg-yellow-400 text-yellow-950' : 'bg-green-500 hover:bg-green-400 text-green-950'} font-black py-4 rounded-xl transition-all shadow-lg`}
+                        >
+                          {loading ? (editMode ? 'Updating...' : 'Adding...') : (editMode ? 'Update Product' : 'Add to Shop')}
+                        </button>
+                        {editMode && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setEditMode(false);
+                              setEditItemId(null);
+                              setNewItem({ name: '', category: 'Seeds', price: '', description: '', stock: '' });
+                            }}
+                            className="bg-white/10 hover:bg-white/20 text-white font-black py-4 px-6 rounded-xl transition-all border border-white/10"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+
                     </form>
                   </div>
                 </div>
@@ -276,12 +392,23 @@ const AdminDashboard = () => {
                               <p className="text-green-400 text-[10px] font-black uppercase tracking-widest mb-1">{item.category}</p>
                               <h4 className="text-lg font-bold text-white line-clamp-1">{item.name}</h4>
                             </div>
-                            <button 
-                              onClick={() => handleDeleteItem(item.id)}
-                              className="p-2 text-white/20 hover:text-red-400 transition-colors"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
+                            <div className="flex gap-1">
+                              <button 
+                                onClick={() => handleEditClick(item)}
+                                className="p-2 text-white/20 hover:text-yellow-400 transition-colors"
+                                title="Edit Item"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteItem(item.id)}
+                                className="p-2 text-white/20 hover:text-red-400 transition-colors"
+                                title="Delete Item"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              </button>
+                            </div>
+
                           </div>
                           <div className="flex justify-between items-center mt-auto">
                             <p className="text-2xl font-black text-white">${item.price}</p>
@@ -429,6 +556,128 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {activeTab === 'agents' && (
+            <div className="max-w-6xl mx-auto animate-fadeIn">
+              <div className="flex justify-between items-end mb-12">
+                <div>
+                  <h1 className="text-4xl font-black mb-2">Agricultural Officers</h1>
+                  <p className="text-white/50 font-medium">Manage your team of experts and their contact details</p>
+                </div>
+                <div className="bg-white/5 rounded-2xl px-6 py-4 border border-white/10">
+                  <p className="text-white/40 text-[10px] font-black uppercase mb-1">Active Agents</p>
+                  <p className="text-2xl font-black text-blue-400">{agents.length}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div className="lg:col-span-1">
+                  <div className="bg-white/5 border border-white/10 rounded-3xl p-8 sticky top-0">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                      {agentEditMode ? 'Update Officer' : 'Add New Officer'}
+                    </h3>
+                    <form onSubmit={handleAddAgent} className="space-y-4">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-white/40 mb-1 ml-1">Full Name</label>
+                        <input 
+                          type="text" required
+                          value={newAgent.name}
+                          onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
+                          placeholder="e.g. Mr. Sunil Perera"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500/50 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-white/40 mb-1 ml-1">Officer Role</label>
+                        <select 
+                          value={newAgent.role}
+                          onChange={(e) => setNewAgent({...newAgent, role: e.target.value})}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none text-sm"
+                        >
+                          <option value="Crops Officer">Crops Officer</option>
+                          <option value="Land Officer">Land Officer</option>
+                          <option value="Animal Officer">Animal Officer</option>
+                          <option value="Regional Manager">Regional Manager</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-white/40 mb-1 ml-1">Phone Number</label>
+                        <input 
+                          type="tel" required
+                          value={newAgent.phone}
+                          onChange={(e) => setNewAgent({...newAgent, phone: e.target.value})}
+                          placeholder="07xxxxxxxx"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-white/40 mb-1 ml-1">Email Address</label>
+                        <input 
+                          type="email" required
+                          value={newAgent.email}
+                          onChange={(e) => setNewAgent({...newAgent, email: e.target.value})}
+                          placeholder="name@farmera.lk"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none text-sm"
+                        />
+                      </div>
+                      
+                      <div className="flex gap-2 pt-2">
+                        <button 
+                          type="submit" disabled={loading}
+                          className={`flex-1 ${agentEditMode ? 'bg-blue-500 hover:bg-blue-400 text-blue-950' : 'bg-white text-black hover:bg-white/90'} font-black py-4 rounded-xl transition-all shadow-lg`}
+                        >
+                          {loading ? 'Processing...' : (agentEditMode ? 'Update Agent' : 'Register Agent')}
+                        </button>
+                        {agentEditMode && (
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setAgentEditMode(false);
+                              setAgentEditId(null);
+                              setNewAgent({ name: '', role: 'Crops Officer', phone: '', email: '' });
+                            }}
+                            className="bg-white/10 hover:bg-white/20 text-white font-black py-4 px-6 rounded-xl transition-all border border-white/10"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {agents.map((agent) => (
+                    <div key={agent.id} className="bg-white/5 border border-white/10 rounded-3xl p-6 group hover:bg-white/10 transition-all">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${agent.role.includes('Crops') ? 'bg-green-500/20 text-green-400' : agent.role.includes('Land') ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                        </div>
+                        <div className="flex gap-1">
+                          <button onClick={() => handleAgentEdit(agent)} className="p-2 text-white/20 hover:text-blue-400 transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg></button>
+                          <button onClick={() => handleDeleteAgent(agent.id)} className="p-2 text-white/20 hover:text-red-400 transition-colors"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">{agent.role}</p>
+                        <h4 className="text-xl font-bold mb-4">{agent.name}</h4>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 text-white/60 text-sm">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                            {agent.phone}
+                          </div>
+                          <div className="flex items-center gap-3 text-white/60 text-sm">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            {agent.email}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </main>
@@ -436,3 +685,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

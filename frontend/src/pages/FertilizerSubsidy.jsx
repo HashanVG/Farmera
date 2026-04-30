@@ -39,26 +39,50 @@ const FertilizerSubsidy = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
     } else {
       setErrors({});
-      // Handle form submission logic here
-      alert('Application submitted successfully!');
-      // Reset form
-      setFormData({
-        fullName: '',
-        nationalId: '',
-        mobileNumber: '',
-        accountNumber: '',
-        document: null
-      });
-      document.getElementById('document').value = '';
+      
+      const formDataToSend = new FormData();
+      formDataToSend.append('type', 'Fertilizer');
+      formDataToSend.append('fullName', formData.fullName);
+      formDataToSend.append('nic', formData.nationalId);
+      formDataToSend.append('mobile', formData.mobileNumber);
+      formDataToSend.append('bankAccount', formData.accountNumber);
+      formDataToSend.append('document', formData.document);
+
+      try {
+        const response = await fetch('http://localhost:5000/api/subsidies', {
+          method: 'POST',
+          body: formDataToSend
+        });
+
+        if (response.ok) {
+          alert('Application submitted successfully!');
+          setFormData({
+            fullName: '',
+            nationalId: '',
+            mobileNumber: '',
+            accountNumber: '',
+            document: null
+          });
+          if (document.getElementById('document')) {
+            document.getElementById('document').value = '';
+          }
+        } else {
+          alert('Submission failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        alert('An error occurred. Please check your connection.');
+      }
     }
   };
+
 
   return (
     <main className="min-h-screen pt-32 pb-16 px-6 flex flex-col items-center relative bg-cover bg-center bg-fixed" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2070&auto=format&fit=crop')" }}>
