@@ -20,32 +20,38 @@ const AboutSection = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-24 relative z-10">
           
-          {/* Row 1 */}
-          <div className="flex justify-center md:justify-end">
-            <img src={imgDrone} alt="Drone spraying field" className="w-[90%] h-auto object-cover rounded-2xl shadow-2xl border border-white/20 transform hover:scale-105 transition-transform duration-500" />
+          {/* 1. Farmers Photo (Now physically first for Mobile) */}
+          <div className="flex justify-center md:justify-start order-1 md:order-4">
+            <img src={imgFarmers} alt="Farmers looking at tablet" className="w-[90%] h-auto object-cover rounded-2xl shadow-2xl border border-white/20 transform hover:scale-105 transition-transform duration-500" />
           </div>
-          <div className="flex items-center pl-4 md:pl-0">
+
+          {/* 2. Description Text */}
+          <div className="flex items-center pl-4 md:pl-0 order-2 md:order-2">
             <p className="text-lg md:text-xl font-medium text-white/90 leading-relaxed pr-8 drop-shadow-md">
               <span className="text-yellow-400 font-bold">FARMERA</span> is a smart agriculture platform designed to support farmers in every step of their journey. From accessing farming resources and government subsidies to connecting with markets and experts, FARMERA brings everything into one convenient digital space. It aims to simplify farming processes, improve efficiency, and build a stronger agricultural community.
             </p>
           </div>
 
-          {/* Row 2 */}
-          <div className="flex flex-col items-center md:items-end justify-center text-center md:text-right pr-4 md:pr-0">
+          {/* 3. Drone Photo (Now moved below the text for Mobile) */}
+          <div className="flex justify-center md:justify-end order-3 md:order-1">
+            <img src={imgDrone} alt="Drone spraying field" className="w-[90%] h-auto object-cover rounded-2xl shadow-2xl border border-white/20 transform hover:scale-105 transition-transform duration-500" />
+          </div>
+
+          {/* 4. Vision Text */}
+          <div className="flex flex-col items-center md:items-end justify-center text-center md:text-right pr-4 md:pr-0 order-4 md:order-3">
             <h2 className="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight drop-shadow-lg">Vision</h2>
             <p className="text-lg md:text-xl font-medium text-white/90 max-w-sm leading-relaxed drop-shadow-md">
               To empower farmers through digital innovation and create a sustainable, connected agricultural future.
             </p>
           </div>
-          <div className="flex justify-center md:justify-start">
-            <img src={imgFarmers} alt="Farmers looking at tablet" className="w-[90%] h-auto object-cover rounded-2xl shadow-2xl border border-white/20 transform hover:scale-105 transition-transform duration-500" />
-          </div>
 
-          {/* Row 3 */}
-          <div className="flex justify-center md:justify-end">
+          {/* 5. Tractor Photo */}
+          <div className="flex justify-center md:justify-end order-5 md:order-5">
             <img src={imgTractor} alt="Tractor in orchard" className="w-[90%] h-auto object-cover rounded-2xl shadow-2xl border border-white/20 transform hover:scale-105 transition-transform duration-500" />
           </div>
-          <div className="flex flex-col items-center md:items-start justify-center text-center md:text-left pl-4 md:pl-0">
+
+          {/* 6. Mission Text */}
+          <div className="flex flex-col items-center md:items-start justify-center text-center md:text-left pl-4 md:pl-0 order-6 md:order-6">
             <h2 className="text-4xl md:text-5xl font-black mb-6 text-white tracking-tight drop-shadow-lg">Mission</h2>
             <p className="text-lg md:text-xl font-medium text-white/90 max-w-sm leading-relaxed drop-shadow-md">
               To provide farmers with easy access to modern tools, market opportunities, subsidies, and expert support, helping them improve productivity and livelihoods.

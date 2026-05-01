@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 const ContactAgent = () => {
   const [formData, setFormData] = useState({
@@ -8,22 +10,29 @@ const ContactAgent = () => {
     message: ''
   });
   const [agents, setAgents] = useState([]);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const fetchAgents = async () => {
+      setError(false);
       try {
-        const res = await fetch('http://localhost:5000/api/agents');
-        const data = await res.json();
+        // Direct Firestore Fetch
+        const querySnapshot = await getDocs(collection(db, 'agents'));
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
         setAgents(data);
         if (data.length > 0) {
           setFormData(prev => ({ ...prev, officerType: data[0].role }));
         }
       } catch (err) {
         console.error('Error fetching agents:', err);
+        setError(true);
       }
     };
     fetchAgents();
   }, []);
+
+
 
   const getAgentStyle = (role) => {
     if (role.includes('Crops')) return { 
@@ -60,22 +69,19 @@ const ContactAgent = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+      await addDoc(collection(db, 'contacts'), {
+        ...formData,
+        createdAt: serverTimestamp()
       });
 
-      if (response.ok) {
-        alert(`Your message has been sent to the ${formData.officerType} successfully! They will contact you soon.`);
-        setFormData({ officerType: agents[0]?.role || '', name: '', phone: '', message: '' });
-      } else {
-        alert('Failed to send message. Please try again.');
-      }
+      alert(`Your message has been sent to the ${formData.officerType} successfully! They will contact you soon.`);
+      setFormData({ officerType: agents[0]?.role || '', name: '', phone: '', message: '' });
     } catch (error) {
       console.error('Error sending message:', error);
       alert('An error occurred. Please check your connection.');
     }
+
   };
 
 
@@ -126,9 +132,18 @@ const ContactAgent = () => {
           })}
           {agents.length === 0 && (
             <div className="col-span-full py-20 text-center bg-white/5 backdrop-blur-md rounded-3xl border border-dashed border-white/20">
-              <p className="text-white/40 font-bold text-xl uppercase tracking-widest">Loading agents...</p>
+              {error ? (
+                <div className="flex flex-col items-center">
+                  <svg className="w-12 h-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  <p className="text-white/80 font-bold text-xl mb-2">Connection Error</p>
+                  <p className="text-white/40 max-w-sm mx-auto">Make sure to use your computer's IP address instead of 'localhost' when testing on mobile.</p>
+                </div>
+              ) : (
+                <p className="text-white/40 font-bold text-xl uppercase tracking-widest animate-pulse">Loading agents...</p>
+              )}
             </div>
           )}
+
         </div>
 
 

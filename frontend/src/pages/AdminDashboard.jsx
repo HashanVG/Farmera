@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { db, storage } from '../firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('shop');
@@ -32,62 +35,75 @@ const AdminDashboard = () => {
 
   const fetchItems = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/shop');
-      const data = await res.json();
+      const querySnapshot = await getDocs(collection(db, 'shop_items'));
+      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setItems(data);
     } catch (err) { console.error(err); }
   };
 
   const fetchNotices = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/notices');
-      const data = await res.json();
+      const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setNotices(data);
     } catch (err) { console.error(err); }
   };
 
   const fetchAgents = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/agents');
-      const data = await res.json();
+      const querySnapshot = await getDocs(collection(db, 'agents'));
+      const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAgents(data);
     } catch (err) { console.error(err); }
   };
 
+
   const handleAddItem = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const formData = new FormData();
-    formData.append('name', newItem.name);
-    formData.append('category', newItem.category);
-    formData.append('price', newItem.price);
-    formData.append('description', newItem.description);
-    formData.append('stock', newItem.stock);
-    if (image) formData.append('image', image);
 
     try {
-      const url = editMode 
-        ? `http://localhost:5000/api/shop/${editItemId}`
-        : 'http://localhost:5000/api/shop';
+      let imageUrl = editMode ? items.find(i => i.id === editItemId)?.imageUrl : '';
       
-      const method = editMode ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method: method,
-        body: formData,
-      });
-
-      if (res.ok) {
-        alert(editMode ? 'Item updated successfully!' : 'Item added successfully!');
-        setNewItem({ name: '', category: 'Seeds', price: '', description: '', stock: '' });
-        setImage(null);
-        setEditMode(false);
-        setEditItemId(null);
-        fetchItems();
+      // Upload image if selected
+      if (image) {
+        const imageRef = ref(storage, `shop/${Date.now()}_${image.name}`);
+        const snapshot = await uploadBytes(imageRef, image);
+        imageUrl = await getDownloadURL(snapshot.ref);
       }
-    } catch (err) { console.error(err); }
-    setLoading(false);
+
+      const itemData = {
+        name: newItem.name,
+        category: newItem.category,
+        price: parseFloat(newItem.price),
+        description: newItem.description,
+        stock: parseInt(newItem.stock),
+        imageUrl: imageUrl,
+        updatedAt: serverTimestamp()
+      };
+
+      if (editMode) {
+        await updateDoc(doc(db, 'shop_items', editItemId), itemData);
+        alert('Item updated successfully!');
+      } else {
+        await addDoc(collection(db, 'shop_items'), { ...itemData, createdAt: serverTimestamp() });
+        alert('Item added successfully!');
+      }
+
+      setNewItem({ name: '', category: 'Seeds', price: '', description: '', stock: '' });
+      setImage(null);
+      setEditMode(false);
+      setEditItemId(null);
+      fetchItems();
+    } catch (err) { 
+      console.error(err); 
+      alert("Failed to save item: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const handleEditClick = (item) => {
     setEditMode(true);
@@ -105,52 +121,55 @@ const AdminDashboard = () => {
   const handleAddNotice = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const formData = new FormData();
-    formData.append('title', newNotice.title);
-    formData.append('sender', newNotice.sender);
-    formData.append('description', newNotice.description);
-    if (noticeImage) formData.append('image', noticeImage);
 
     try {
-      const res = await fetch('http://localhost:5000/api/notices', {
-        method: 'POST',
-        body: formData,
-      });
-      if (res.ok) {
-        alert('Notice added successfully!');
-        setNewNotice({ title: '', sender: '', description: '' });
-        setNoticeImage(null);
-        fetchNotices();
+      let imageUrl = '';
+      if (noticeImage) {
+        const imageRef = ref(storage, `notices/${Date.now()}_${noticeImage.name}`);
+        const snapshot = await uploadBytes(imageRef, noticeImage);
+        imageUrl = await getDownloadURL(snapshot.ref);
       }
-    } catch (err) { console.error(err); }
-    setLoading(false);
+
+      await addDoc(collection(db, 'notices'), {
+        ...newNotice,
+        imageUrl: imageUrl,
+        createdAt: serverTimestamp()
+      });
+
+      alert('Notice added successfully!');
+      setNewNotice({ title: '', sender: '', description: '' });
+      setNoticeImage(null);
+      fetchNotices();
+    } catch (err) { 
+      console.error(err);
+      alert("Failed to add notice: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const handleAddAgent = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const url = agentEditMode 
-        ? `http://localhost:5000/api/agents/${agentEditId}`
-        : 'http://localhost:5000/api/agents';
-      
-      const method = agentEditMode ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newAgent),
-      });
-
-      if (res.ok) {
-        alert(agentEditMode ? 'Agent updated!' : 'Agent added!');
-        setNewAgent({ name: '', role: 'Crops Officer', phone: '', email: '' });
-        setAgentEditMode(false);
-        setAgentEditId(null);
-        fetchAgents();
+      if (agentEditMode) {
+        await updateDoc(doc(db, 'agents', agentEditId), newAgent);
+        alert('Agent updated!');
+      } else {
+        await addDoc(collection(db, 'agents'), newAgent);
+        alert('Agent added!');
       }
-    } catch (err) { console.error(err); }
-    setLoading(false);
+      setNewAgent({ name: '', role: 'Crops Officer', phone: '', email: '' });
+      setAgentEditMode(false);
+      setAgentEditId(null);
+      fetchAgents();
+    } catch (err) { 
+      console.error(err); 
+      alert("Failed to save agent: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAgentEdit = (agent) => {
@@ -168,7 +187,7 @@ const AdminDashboard = () => {
   const handleDeleteItem = async (id) => {
     if (!window.confirm('Delete this item?')) return;
     try {
-      await fetch(`http://localhost:5000/api/shop/${id}`, { method: 'DELETE' });
+      await deleteDoc(doc(db, 'shop_items', id));
       fetchItems();
     } catch (err) { console.error(err); }
   };
@@ -176,7 +195,7 @@ const AdminDashboard = () => {
   const handleDeleteNotice = async (id) => {
     if (!window.confirm('Delete this notice?')) return;
     try {
-      await fetch(`http://localhost:5000/api/notices/${id}`, { method: 'DELETE' });
+      await deleteDoc(doc(db, 'notices', id));
       fetchNotices();
     } catch (err) { console.error(err); }
   };
@@ -184,10 +203,11 @@ const AdminDashboard = () => {
   const handleDeleteAgent = async (id) => {
     if (!window.confirm('Delete this agent?')) return;
     try {
-      await fetch(`http://localhost:5000/api/agents/${id}`, { method: 'DELETE' });
+      await deleteDoc(doc(db, 'agents', id));
       fetchAgents();
     } catch (err) { console.error(err); }
   };
+
 
 
   const filteredItems = selectedCategory === 'All' 

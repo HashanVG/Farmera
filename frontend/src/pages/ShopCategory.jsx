@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { auth } from '../firebase';
 import { useCart } from '../context/CartContext';
+
 
 const categoryBackgrounds = {
   seeds: 'https://images.unsplash.com/photo-1550828520-4cb496926fc9?q=80&w=2070&auto=format&fit=crop',
@@ -9,11 +11,17 @@ const categoryBackgrounds = {
   fertilizers: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2064&auto=format&fit=crop'
 };
 
+import { db } from '../firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+
 function ShopCategory() {
   const { category } = useParams();
+  const navigate = useNavigate();
   const { addToCart } = useCart();
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   // Capitalize the category name for display and matching
   const categoryName = category ? category.charAt(0).toUpperCase() + category.slice(1) : 'Category';
@@ -22,30 +30,35 @@ function ShopCategory() {
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
+      setError(false);
       try {
-        const res = await fetch('http://localhost:5000/api/shop');
-        const data = await res.json();
+        // Direct Firestore Fetch
+        const q = query(collection(db, 'shop_items'), where('category', '==', categoryName));
+        const querySnapshot = await getDocs(q);
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Filter products by category (case-insensitive)
-        const filtered = Array.isArray(data) ? data.filter(item => 
-          item.category.toLowerCase() === categoryKey
-        ) : [];
-        
-        setProducts(filtered);
+        setProducts(data);
       } catch (err) {
         console.error('Error fetching products:', err);
+        setError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchProducts();
-  }, [categoryKey]);
+  }, [categoryName]);
+
 
   const bgImage = categoryKey && categoryBackgrounds[categoryKey] 
     ? categoryBackgrounds[categoryKey] 
     : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2064&auto=format&fit=crop';
 
   const handleAddToCart = (product) => {
+    if (!auth.currentUser) {
+      alert("Please log in to add items to your cart.");
+      navigate('/sign-in');
+      return;
+    }
     if (product.stock <= 0) {
       alert("This item is out of stock!");
       return;
@@ -53,6 +66,7 @@ function ShopCategory() {
     addToCart(product);
     alert(`Added ${product.name} to your cart!`);
   };
+
 
   return (
     <main className="min-h-screen pt-32 pb-16 px-6 flex flex-col items-center relative bg-cover bg-center bg-fixed transition-all duration-500" style={{ backgroundImage: `url('${bgImage}')` }}>
@@ -124,19 +138,26 @@ function ShopCategory() {
             ) : (
               <div className="p-8 md:p-12 text-center">
                 <div className="w-24 h-24 bg-white/10 border border-white/20 text-yellow-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner backdrop-blur-md">
-                  <svg className="w-12 h-12 drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
+                  {error ? (
+                    <svg className="w-12 h-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  ) : (
+                    <svg className="w-12 h-12 drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                  )}
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-md">Coming Soon!</h2>
+                <h2 className="text-3xl font-bold text-white mb-4 drop-shadow-md">{error ? 'Connection Error' : 'Coming Soon!'}</h2>
                 <p className="text-white/80 mb-10 max-w-lg mx-auto text-lg">
-                  We are currently stocking up our {categoryName.toLowerCase()} section. Check back soon!
+                  {error 
+                    ? "We couldn't connect to the database. If you're on mobile, make sure to use your computer's IP address instead of 'localhost'." 
+                    : `We are currently stocking up our ${categoryName.toLowerCase()} section. Check back soon!`}
                 </p>
                 <Link to="/" className="inline-block bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-bold py-4 px-10 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.3)] hover:shadow-[0_0_25px_rgba(250,204,21,0.5)] transform hover:-translate-y-1 transition-all duration-300">
                   Return Home
                 </Link>
               </div>
             )}
+
             
           </div>
         </div>

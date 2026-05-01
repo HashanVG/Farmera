@@ -8,7 +8,7 @@ const FertilizerSubsidy = () => {
     accountNumber: '',
     document: null
   });
-
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
   const validate = () => {
@@ -49,37 +49,48 @@ const FertilizerSubsidy = () => {
       
       const formDataToSend = new FormData();
       formDataToSend.append('type', 'Fertilizer');
-      formDataToSend.append('fullName', formData.fullName);
-      formDataToSend.append('nic', formData.nationalId);
-      formDataToSend.append('mobile', formData.mobileNumber);
-      formDataToSend.append('bankAccount', formData.accountNumber);
-      formDataToSend.append('document', formData.document);
-
+      setLoading(true);
       try {
-        const response = await fetch('http://localhost:5000/api/subsidies', {
-          method: 'POST',
-          body: formDataToSend
+        const { storage, db } = await import('../firebase');
+        const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+        const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+
+        let documentUrl = '';
+        if (formData.document) {
+          const docRef = ref(storage, `subsidies/fertilizer/${Date.now()}_${formData.document.name}`);
+          const snapshot = await uploadBytes(docRef, formData.document);
+          documentUrl = await getDownloadURL(snapshot.ref);
+        }
+
+        await addDoc(collection(db, 'subsidies'), {
+          type: 'Fertilizer',
+          fullName: formData.fullName,
+          nic: formData.nationalId,
+          mobile: formData.mobileNumber,
+          bankAccount: formData.accountNumber,
+          documentUrl: documentUrl,
+          status: 'pending',
+          createdAt: serverTimestamp()
         });
 
-        if (response.ok) {
-          alert('Application submitted successfully!');
-          setFormData({
-            fullName: '',
-            nationalId: '',
-            mobileNumber: '',
-            accountNumber: '',
-            document: null
-          });
-          if (document.getElementById('document')) {
-            document.getElementById('document').value = '';
-          }
-        } else {
-          alert('Submission failed. Please try again.');
+        alert('Application submitted successfully!');
+        setFormData({
+          fullName: '',
+          nationalId: '',
+          mobileNumber: '',
+          accountNumber: '',
+          document: null
+        });
+        if (document.getElementById('document')) {
+          document.getElementById('document').value = '';
         }
       } catch (error) {
         console.error('Error submitting application:', error);
-        alert('An error occurred. Please check your connection.');
+        alert('An error occurred. Please try again.');
+      } finally {
+        setLoading(false);
       }
+
     }
   };
 

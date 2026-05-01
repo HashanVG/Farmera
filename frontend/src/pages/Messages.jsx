@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { auth, db } from '../firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 const Messages = () => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -8,12 +10,16 @@ const Messages = () => {
   useEffect(() => {
     const fetchNotices = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/notices');
-        const data = await res.json();
+        // Direct Firestore Fetch
+        const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+        const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
         setNotices(data);
         
-        // Mark as seen by updating the timestamp to now
-        localStorage.setItem('lastNoticeViewTime', Date.now());
+        // Mark as seen for this specific user
+        const storageKey = auth.currentUser ? `lastNoticeViewTime_${auth.currentUser.uid}` : 'lastNoticeViewTime_guest';
+        localStorage.setItem(storageKey, Date.now());
       } catch (err) {
         console.error('Error fetching notices:', err);
       } finally {
@@ -22,6 +28,7 @@ const Messages = () => {
     };
     fetchNotices();
   }, []);
+
 
 
   return (

@@ -44,26 +44,20 @@ const SignUp = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
 
-      // 2. Call Backend API to save extra details to Firestore
-      const response = await fetch('http://localhost:5000/api/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          uid: user.uid,
-          username: formData.username,
-          email: formData.email,
-          mobileNumber: formData.mobileNumber,
-          address: formData.address,
-        }),
+      // 2. Direct Firestore Save
+      const { db } = await import('../firebase');
+      const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+      
+      await setDoc(doc(db, 'users', user.uid), {
+        username: formData.username,
+        email: formData.email,
+        mobileNumber: formData.mobileNumber,
+        address: formData.address,
+        role: 'user', // Default role
+        createdAt: serverTimestamp()
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save user data to database');
-      }
-
-      alert("Account created successfully!");
+      alert("Registration successful!");
       navigate('/sign-in');
     } catch (err) {
       setError(err.message);
